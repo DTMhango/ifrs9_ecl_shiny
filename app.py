@@ -1,3 +1,4 @@
+import openpyxl.writer
 from shiny import App, render, ui, reactive, req
 from faicons import icon_svg
 import io
@@ -14,6 +15,8 @@ from model_doc import mathjax_script, Ts_and_Cs, model_docs, base_matrix_text, f
 from shinywidgets import render_plotly, output_widget, render_plotly
 from shiny.types import FileInfo
 from pandarallel import pandarallel
+import openpyxl
+import csv
 
 pandarallel.initialize()
 
@@ -250,7 +253,9 @@ app_ui = ui.page_fluid(shinyswatch.theme.cosmo(),
                     2,
                     ui.layout_column_wrap(
                         ui.input_task_button("ecl_compute", "Calculate ECL", icon=icon_svg("calculator"), width="200px"),
-                        ui.download_button("download_ecl", "ECL Output", icon=icon_svg("download"), width="200px")
+                        ui.download_button("download_ecl_xlsx", "Download Excel", icon=icon_svg("download"), width="200px"),
+                        ui.download_button("download_ecl_csv", "Download CSV", icon=icon_svg("download"), width="200px")
+
                     ),
                 ),
                 ui.column(
@@ -447,11 +452,16 @@ def server(input, output, session):
         notif = ui.notification_show("Recoveries File Upload Complete!", duration=5, close_button=True)
 
 
+    @reactive.Effect
+    def _():
+        nonlocal valuation_date
+        valuation_date = pd.to_datetime(input.val_date())
+
+
     @render.data_frame
     @reactive.event(input.compute_pds)
     def s1_marg():
-        nonlocal valuation_date
-        valuation_date = pd.to_datetime(input.val_date())
+
         with ui.Progress(1, 10) as p:
             p.set(message="Reading file contents...", detail="Computing PD Term Structure from Uploaded Data")
 
@@ -609,7 +619,7 @@ def server(input, output, session):
         #     return None
         # Subset the Dataframe to display only the listed columns
         return render.DataGrid(LOANBOOK[['account_no', 'client_id', 'disbursement_date', 'maturity_date', 'loan_type', 'staging']],
-                               height="500px", 
+                            #    height="500px", 
                                filters=True, 
                                row_selection_mode='single')
     
@@ -629,7 +639,7 @@ def server(input, output, session):
 
         return render.DataGrid(
             amort(),
-            height="500px",
+            # height="500px",
             filters=True,
             row_selection_mode='single'
         )
@@ -678,7 +688,7 @@ def server(input, output, session):
         ui.modal_show(ui.modal(f"LGD Computed Successfully", title="Operation Complete", easy_close=True))
 
         return render.DataGrid(LOANBOOK[['account_no', 'client_id', 'disbursement_date', 'maturity_date', 'loan_type', 'staging']],
-                               height="500px", 
+                            #    height="500px", 
                                filters=True, 
                                row_selection_mode='single')
         
@@ -697,7 +707,7 @@ def server(input, output, session):
 
         return render.DataGrid(
             lgd_amort(),
-            height="500px",
+            # height="500px",
             filters=True,
             row_selection_mode='single'
         )
@@ -825,20 +835,38 @@ def server(input, output, session):
     def ecl_single():
         return render.DataGrid(
             ecl_term(),
-            height="500px",
+            # height="500px",
             filters=True,
             row_selection_mode='single'
         )
     
+    # @output
+    # @ui.output_ui
+    # @reactive.event
+    # def download_button_ui():
+    #     return ui.download_button('download_ecl', 'ECL Output')
+
     @render.download(
-        filename= f"Expected Credit Loss - Output as at {valuation_date}.csv"
+        filename=lambda: f"Expected Credit Loss - Output as at {valuation_date.strftime('%Y-%m-%d')}.xlsx"
     )
-    def download_ecl():
-        def generate():
-            with io.BytesIO() as buf:
-                ECL.to_csv(buf, index='False')
-                buf.seek(0)
-                yield buf.read()
-        return generate
+    def download_ecl_xlsx():
+
+        output = io.BytesIO()
+
+        with pd.ExcelWriter(output, engine='openpyxl') as writer:
+            ECL.to_excel(writer, index=False, sheet_name=f"{valuation_date.strftime('%d-%m-%Y')}")
+        
+        output.seek(0)
+        return output
+    
+    
+    @render.download(
+        filename=lambda: f"Expected Credit Loss - Output as at {valuation_date.strftime('%Y-%m-%d')}.csv"
+    )
+    def download_ecl_csv():
+        output = io.BytesIO()
+        ECL.to_csv(output, index=False)
+        output.seek(0)
+        return output
     
 app = App(app_ui, server)
