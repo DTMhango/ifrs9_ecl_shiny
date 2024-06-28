@@ -1,4 +1,4 @@
-### ifrs9_pyshiny_app
+### IFRS 9 Expected Credit Loss Application
 IFRS 9 Web Application written in py-Shiny.
 
 The App consists of four models that combine to compute the Expected Credit Loss. These are:
