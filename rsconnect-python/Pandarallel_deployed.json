@@ -1,0 +1,11 @@
+{
+    "https://api.shinyapps.io": {
+        "server_url": "https://api.shinyapps.io",
+        "filename": "C:\\Users\\mhang\\Documents\\Deployed\\Pandarallel_deployed",
+        "app_url": "https://gralixtechnologies.shinyapps.io/ifrs9_engine_parallel/",
+        "app_id": 12189448,
+        "app_guid": null,
+        "title": "ifrs9_engine_parallel",
+        "app_mode": "python-shiny"
+    }
+}

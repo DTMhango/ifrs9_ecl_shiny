@@ -1,0 +1,11 @@
+aiohttp==3.9.5
+faicons==0.2.2
+numpy==1.26.4
+numpy_financial==1.0.0
+pandarallel==1.6.5
+pandas==2.2.2
+plotly==5.22.0
+scipy==1.13.1
+shiny==0.8.1
+shinyswatch==0.5.1
+shinywidgets==0.3.2
